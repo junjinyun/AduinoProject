@@ -1,3 +1,5 @@
+#include <DFRobot_DHT11.h>
+
 #include <SoftwareSerial.h>
 
 SoftwareSerial btSerial(10, 11); // 블루투스 통신용 소프트웨어 시리얼
@@ -19,7 +21,7 @@ const int tempSensorControlPin = 7;   // 온습도 센서 제어
 const int flameSensorControlPin = 8;  // 화염 센서 제어
 
 // 센서 입력 핀 (아날로그 입력)
-const int flameSensorInputPin = A1;
+const int flameSensorInputPin = 13;
 const int tempSensorInputPin = A2;
 const int lightSensorInputPin = A3;
 
@@ -48,7 +50,7 @@ void setup() {
   pinMode(lightSensorControlPin, OUTPUT);
   pinMode(tempSensorControlPin, OUTPUT);
   pinMode(flameSensorControlPin, OUTPUT);
-
+  pinMode(flameSensorInputPin, INPUT);
   digitalWrite(lightSensorControlPin, LOW);
   digitalWrite(tempSensorControlPin, LOW);
   digitalWrite(flameSensorControlPin, LOW);
@@ -64,7 +66,7 @@ void loop() {
   // 센서가 활성화되어 있으면 센서값 읽고 제어 실행
   sensorControlLoop();
 
-  delay(200); // 센서 읽기 주기 약간 둠
+  delay(3000); // 센서 읽기 주기 약간 둠
 }
 
 void checkBluetoothAndSerial() {
@@ -208,26 +210,26 @@ void handleCommand(String target, String action, String param) {
 
 // 센서 활성 시 동작 처리
 void sensorControlLoop() {
-  if (isFlameSensorOn) {
-    int flameValue = analogRead(flameSensorInputPin);
-    // 화염 감지 임계치 설정 (예: 300 이상이면 감지)
-    if (flameValue > 300) {
-      // 부저 50% 출력 (레벨 3)
-      analogWrite(buzzerPin, mapLevelToPWM(3));
-      Serial.println("화염 감지! 부저 ON (50%)");
-    } else {
-      analogWrite(buzzerPin, 0);
-    }
+if (isFlameSensorOn) {
+  bool flameDetected = digitalRead(flameSensorInputPin) == LOW; // LOW일 때 화염 감지됨
+  if (flameDetected) {
+    analogWrite(buzzerPin, mapLevelToPWM(3)); // 부저 50%
+    Serial.println("화염 감지됨!");
+  } else {
+    analogWrite(buzzerPin, 0);
+    Serial.println("화염 없음.");
   }
+}
+
 
   if (isLightSensorOn) {
     int lightValue = analogRead(lightSensorInputPin);
-    // 조도 임계치 20% = 255 * 0.2 = 51 이하일 경우 LED 2단계 (40%) ON
-    if (lightValue < 51) {
+    if (lightValue < 200) {
       analogWrite(ledPin, mapLevelToPWM(2));
       Serial.println("조도 낮음(" + String(lightValue) + ") LED 2단계 ON");
     } else {
       analogWrite(ledPin, 0);
+      Serial.println("조도 (" + String(lightValue) + ")");
     }
   }
 
